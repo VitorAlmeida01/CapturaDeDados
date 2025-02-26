@@ -4,91 +4,76 @@ import psutil  # Biblioteca para captura dos recursos computacionais
 
 def obter_dados():
     cpuPercent = psutil.cpu_percent(interval=1)  # Porcentagem em uso do CPU
-    cpuCore = psutil.cpu_count(logical=False)  # Número de núcleos físicos da CPU
-    cpuCore2 = psutil.cpu_count(logical=True)  # Número de núcleos logicos da CPU
+    cpuFreq = psutil.cpu_freq()
 
     diskUsage = psutil.disk_usage('/')
     diskUsageTotal = round(diskUsage.total / (1024**3), 2)  # Total do disco em GB
-    diskUsageFree = round(diskUsage.free / (1024**3), 2)  # Total de de disco livre em GB
+    diskPercent = psutil.disk_usage().percent
 
     memory = psutil.virtual_memory()
-    memoryAvailable = round(memory.available / (1024**3), 2)  # Total de memória RAM disponível
+
     memoryTotal = round(memory.total / (1024**3), 2)  # Total de memória RAM
-    memoryUsed = round(memory.used / (1024 ** 3), 2)  # Total de memória RAM sendo usada
+    memoryPercent = psutil.virtual_memory().percent
 
-    internet = psutil.net_io_counters()
-    intSent = round(internet.bytes_sent / (1024 ** 2), 2)  # Upload
-    intRec = round(internet.bytes_recv / (1024 ** 2), 2)  # Download
 
-    return cpuCore, cpuCore2, cpuPercent, diskUsageTotal, diskUsageFree, memoryTotal, memoryAvailable, memoryUsed, intSent, intRec
+    return cpuPercent, memoryPercent, diskPercent, memoryTotal, cpuFreq, diskUsageTotal
 
 # Efetua a conexão com o banco de dados
 mydb = mysql.connector.connect(
-    host="localhost",
-    user="root",
-    password="root",
-    database="aulaPython"
+    host="192.168.56.1:3306",
+    user="insert_user",
+    password="borainserir123",
+    database="python"
 )
 
 print(mydb)
 
 mycursor = mydb.cursor()
 
+dados = obter_dados()
+
+ramTotal = dados[3]
+cpuTotal = dados[4]
+diskTotal = dados[5]
+
+cod_maq = input("Digite o código da sua máquina (informe somente números).")
+
+sql2 = "Insert into maquina values (%s, %s, %s, %s, %s)"
+val2 = (cod_maq, ramTotal, cpuTotal, diskTotal )
+mycursor.execute(sql2, val2)
+mydb.commit()
+
+
 # Loop que sempre será verdadeiro até que o usuario interrompa
 while True:
     # Perguntar ao usuário qual informação deseja ver
     user_input = input("Digite 'cpu' para ver dados de CPU, 'ram' para RAM, 'disco' para Disco, 'rede' para Rede ou 'sair' para encerrar: ").lower()
 
-    if user_input == 'cpu' or user_input == 'ram' or user_input == 'disco' or user_input == 'rede':
-        dados = obter_dados()  # Atribuo a função de captura de dados a uma variável
+    dados = obter_dados()  # Atribuo a função de captura de dados a uma variável
 
-        # Atribuo o valor de cada posição do array que contém os dados dos recursos computacionais em variáveis
-        cpuCore = dados[0]
-        cpuCore2 = dados[1]
-        cpuPercent = dados[2]
-        diskUsageTotal = dados[3]
-        diskUsageFree = dados[4]
-        memoryTotal = dados[5]
-        memoryAvailable = dados[6]
-        memoryUsed = dados[7]
-        intSent = dados[8]
-        intRec = dados[9]
+    cpu_percent = dados[0]
+    ram_percent = dados[1]
+    disk_percent = dados[2]
 
         # Crio o comando de INSERT no banco
-        sql = "INSERT INTO dados (cpuCore, cpuCoreLog, cpuPercent, diskTotal, diskFree, ramTotal, ramLivre, ramUsed, intRec, intSent) VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s);"
-        val = (cpuCore, cpuCore2, cpuPercent, diskUsageTotal, diskUsageFree, memoryTotal, memoryAvailable, memoryUsed, intRec, intSent)
+    sql = "INSERT INTO dados (cpu_percent, ram_percent, disk_percent, fkMaquina) VALUES(%s, %s, %s, %s);"
+    val = (cpu_percent, ram_percent, disk_percent, cod_maq)
         
         # Executo o comando sql e os valores de seus respectivos campos que serão enviados para o banco
-        mycursor.execute(sql, val)
-        mydb.commit()
+    mycursor.execute(sql, val)
+    mydb.commit()
 
         # Exibe os dados que foram inseridos
-        if user_input == 'cpu':
-            print("\n---- Dados de CPU ----")
-            print(f"CPU em uso: {cpuPercent}%")
-            print(f"Quantidade de núcleos físicos do processador: {cpuCore}")
-            print(f"Quantidade de núcleos lógicos do processador: {cpuCore2}")
+    print("\n---- Dados de CPU ----")
+    print(f"Porcentagem da cpu: {cpu_percent}")
+  
 
-        elif user_input == 'ram':
-            print("\n---- Dados de RAM ----")
-            print(f"Quantidade de RAM total: {memoryTotal}GB")
-            print(f"Quantidade de RAM disponível: {memoryAvailable}GB")
-            print(f"Quantidade de RAM sendo usada: {memoryUsed}GB")
+    print("\n---- Dados de RAM ----")
+    print(f"Porcentage de RAM: {ram_percent}GB")
 
-        elif user_input == 'disco':
-            print("\n---- Dados de Disco ----")
-            print(f"Armazenamento total do disco: {diskUsageTotal}GB")
-            print(f"Armazenamento livre do disco: {diskUsageFree}GB")
 
-        elif user_input == 'rede':
-            print("\n---- Dados de Rede ----")
-            print(f"Download: {intRec}MB")
-            print(f"Upload: {intSent}MB")
-
-    elif user_input == 'sair':
-        # Encerra o loop se o usuário digitar 'sair'
-        print("Saindo...")
-        break
+    print("\n---- Dados de Disco ----")
+    print(f"Porcentagem do disco: {disk_percent}GB")
 
     # Pausa o código por 2 segundos antes de repetir o loop
     time.sleep(2)
