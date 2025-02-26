@@ -20,7 +20,7 @@ def obter_dados():
 
 # Efetua a conexão com o banco de dados
 mydb = mysql.connector.connect(
-    host="192.168.56.1:3306",
+    host="192.168.56.1",
     user="insert_user",
     password="borainserir123",
     database="python"
