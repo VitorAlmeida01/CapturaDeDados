@@ -5,22 +5,26 @@ import psutil  # Biblioteca para captura dos recursos computacionais
 def obter_dados():
     cpuPercent = psutil.cpu_percent(interval=1)  # Porcentagem em uso do CPU
     cpuFreq = psutil.cpu_freq().max
+    cpuByte = psutil.cpu_freq().current
 
     diskUsage = psutil.disk_usage('/')
     diskUsageTotal = round(diskUsage.total / (1024**3), 2)  # Total do disco em GB
     diskPercent = psutil.disk_usage('/').percent # Trocar para discol local C: caso o SO seja windows
+    diskByte = psutil.disk_usage('/').used
+
 
     memory = psutil.virtual_memory()
 
     memoryTotal = round(memory.total / (1024**3), 2)  # Total de memória RAM
     memoryPercent = psutil.virtual_memory().percent
+    memoryByte = psutil.virtual_memory().used
 
 
-    return cpuPercent, memoryPercent, diskPercent, memoryTotal, cpuFreq, diskUsageTotal
+    return cpuPercent, memoryPercent, diskPercent, memoryTotal, cpuFreq, diskUsageTotal, memoryByte, diskByte, cpuByte
 
 # Efetua a conexão com o banco de dados
 mydb = mysql.connector.connect(
-    host="10.18.32.79",
+    host="localhost",
     user="insert_user",
     password="borainserir123",
     database="python"
@@ -35,6 +39,10 @@ dados = obter_dados()
 ramTotal = dados[3]
 cpuTotal = dados[4]
 diskTotal = dados[5]
+ramByte = dados[6]
+diskByte = dados[7]
+cpuByte = dados[8]
+
 
 cod_maq = input("Digite o código da sua máquina (informe somente números).")
 
@@ -54,10 +62,13 @@ while True:
     cpu_percent = dados[0]
     ram_percent = dados[1]
     disk_percent = dados[2]
+    ramByte = dados[6]
+    diskByte = dados[7]
+    cpuByte = dados[8]
 
         # Crio o comando de INSERT no banco
-    sql = "INSERT INTO dados (cpu_percent, ram_percent, disk_percent, fkMaquina) VALUES(%s, %s, %s, %s);"
-    val = (cpu_percent, ram_percent, disk_percent, cod_maq)
+    sql = "INSERT INTO dados (cpu_percent, ram_percent, disk_percent, cpu_byte, ram_byte, disk_byte, fkMaquina) VALUES(%s, %s, %s, %s, %s, %s, %s);"
+    val = (cpu_percent, ram_percent, disk_percent, cpuByte, ramByte, diskByte, cod_maq)
         
         # Executo o comando sql e os valores de seus respectivos campos que serão enviados para o banco
     mycursor.execute(sql, val)
