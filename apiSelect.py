@@ -2,7 +2,7 @@ import mysql.connector
 import time
 
 db = mysql.connector.connect(
-    host="localhost", 
+    host="10.18.32.65", 
     user="select_user",
     passwd="boraselecionar123",
     database="python"

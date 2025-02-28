@@ -1,6 +1,7 @@
 import mysql.connector  # Biblioteca para conexão com o mysql
 import time  # Biblioteca para contar o tempo
 import psutil  # Biblioteca para captura dos recursos computacionais
+from mysql.connector import Error
 
 def obter_dados():
     cpuPercent = psutil.cpu_percent(interval=1)  # Porcentagem em uso do CPU
@@ -24,17 +25,26 @@ def obter_dados():
 
 # Efetua a conexão com o banco de dados
 mydb = mysql.connector.connect(
-    host="localhost",
+    host="10.18.32.65",
     user="insert_user",
     password="borainserir123",
+    database="python"
+)
+
+mydb2 = mysql.connector.connect(
+    host="10.18.32.65", 
+    user="select_user",
+    passwd="boraselecionar123",
     database="python"
 )
 
 print(mydb)
 
 mycursor = mydb.cursor()
+mycursor2 = mydb2.cursor()
 
-dados = obter_dados()
+dados = obter_dados() # Atribuo a função de captura de dados a uma variável
+
 
 ramTotal = dados[3]
 cpuTotal = dados[4]
@@ -44,20 +54,22 @@ diskByte = dados[7]
 cpuByte = dados[8]
 
 
-cod_maq = input("Digite o código da sua máquina (informe somente números).")
+cod_maq = input("Digite o código da sua máquina (caso ja tenha um codigo).")
 
-sql2 = "Insert into maquina values (%s, %s, %s, %s)"
-val2 = (cod_maq, ramTotal, cpuTotal, diskTotal )
-mycursor.execute(sql2, val2)
-mydb.commit()
+sql3 = f"Select cod from maquina where cod = {cod_maq}"
+mycursor2.execute(sql3)
+resultado = mycursor2.fetchone()
+
+if resultado is None:
+    sql2 = "Insert into maquina values (%s, %s, %s, %s)"
+    val2 = (cod_maq, ramTotal, cpuTotal, diskTotal )
+    mycursor.execute(sql2, val2)
+    mydb.commit()
 
 
 # Loop que sempre será verdadeiro até que o usuario interrompa
 while True:
     # Perguntar ao usuário qual informação deseja ver
-    # user_input = input("Digite 'cpu' para ver dados de CPU, 'ram' para RAM, 'disco' para Disco, 'rede' para Rede ou 'sair' para encerrar: ").lower()
-
-    dados = obter_dados()  # Atribuo a função de captura de dados a uma variável
 
     cpu_percent = dados[0]
     ram_percent = dados[1]
