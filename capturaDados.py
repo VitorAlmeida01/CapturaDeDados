@@ -20,19 +20,23 @@ def obter_dados():
     memoryPercent = psutil.virtual_memory().percent
     memoryByte = psutil.virtual_memory().used
 
+    internet = psutil.net_io_counters()
+    redeRecebida = round(internet.bytes_recv/(1024 ** 2), 2)
+    redeEnviada = round(internet.bytes_sent/(1024 ** 2), 2)
 
-    return cpuPercent, memoryPercent, diskPercent, memoryTotal, cpuFreq, diskUsageTotal, memoryByte, diskByte, cpuByte
+
+    return cpuPercent, memoryPercent, diskPercent, memoryTotal, cpuFreq, diskUsageTotal, memoryByte, diskByte, cpuByte, redeRecebida, redeEnviada
 
 # Efetua a conexão com o banco de dados
 mydb = mysql.connector.connect(
-    host="10.18.32.65",
+    host="localhost",
     user="insert_user",
     password="borainserir123",
     database="python"
 )
 
 mydb2 = mysql.connector.connect(
-    host="10.18.32.65", 
+    host="localhost", 
     user="select_user",
     passwd="boraselecionar123",
     database="python"
@@ -49,56 +53,60 @@ dados = obter_dados() # Atribuo a função de captura de dados a uma variável
 ramTotal = dados[3]
 cpuTotal = dados[4]
 diskTotal = dados[5]
+internetTotal = dados[9]
 ramByte = dados[6]
 diskByte = dados[7]
 cpuByte = dados[8]
 
 
-cod_maq = input("Digite o código da sua máquina (caso ja tenha um codigo).")
 
-sql3 = f"Select cod from maquina where cod = {cod_maq}"
-mycursor2.execute(sql3)
+cod_maq = input("Digite o código da sua máquina (caso ja tenha um codigo): ")
+
+sql3 = "SELECT codigoMaquina FROM maquina WHERE codigoMaquina = %s"
+mycursor2.execute(sql3, (cod_maq,))
 resultado = mycursor2.fetchone()
 
+sql4 = "SELECT idComponentes FROM componentes WHERE fkMaquina = %s"
+mycursor2.execute(sql4, (cod_maq,))
+resultado_sql4 = mycursor2.fetchone()
+
 if resultado is None:
-    sql2 = "Insert into maquina values (%s, %s, %s, %s)"
-    val2 = (cod_maq, ramTotal, cpuTotal, diskTotal )
+    print("A sua máquina ainda nescessita de um registro")
+else:
+    sql2 = "UPDATE maquina SET ram = %s,  cpuFreq = %s,  disk = %s,  redeRecebida = %s WHERE codigoMaquina = %s;"
+    val2 = (ramTotal, cpuTotal, diskTotal, internetTotal, cod_maq )
     mycursor.execute(sql2, val2)
     mydb.commit()
 
-
-# Loop que sempre será verdadeiro até que o usuario interrompa
 while True:
-    # Perguntar ao usuário qual informação deseja ver
-
+    dados = obter_dados()
     cpu_percent = dados[0]
     ram_percent = dados[1]
     disk_percent = dados[2]
     ramByte = dados[6]
     diskByte = dados[7]
     cpuByte = dados[8]
+    interneteUsada = dados[10]
 
-        # Crio o comando de INSERT no banco
-    sql = "INSERT INTO dados (cpu_percent, ram_percent, disk_percent, cpu_byte, ram_byte, disk_byte, fkMaquina) VALUES(%s, %s, %s, %s, %s, %s, %s);"
-    val = (cpu_percent, ram_percent, disk_percent, cpuByte, ramByte, diskByte, cod_maq)
+    sql1 = "INSERT INTO dadosDisk (diskPercent, fkComponente, fkMaquina) VALUES(%s, %s, %s);"
+    val1 = (disk_percent, resultado_sql4[0], cod_maq)
+    mycursor.execute(sql1, val1)
+
+    sql2 = "INSERT INTO dadosCpu (cpuPercent, fkComponente, fkMaquina) VALUES(%s, %s, %s);"
+    val2 = (cpu_percent, resultado_sql4[0], cod_maq)
+    mycursor.execute(sql2, val2)
+
+    sql3 = "INSERT INTO dadosRam (ramPercent, fkComponente, fkMaquina) VALUES(%s, %s, %s);"
+    val3 = (ram_percent, resultado_sql4[0], cod_maq)
+    mycursor.execute(sql3, val3)
+
+    sql4 = "INSERT INTO dadosRede (redeEnviada, fkMaquina) VALUES(%s, %s);"
+    val4 = (interneteUsada, cod_maq)
+    mycursor.execute(sql4, val4)
+
         
-        # Executo o comando sql e os valores de seus respectivos campos que serão enviados para o banco
-    mycursor.execute(sql, val)
     mydb.commit()
+    
 
-        # Exibe os dados que foram inseridos
-    print("\n---- Dados de CPU ----")
-    print(f"Porcentagem da cpu: {cpu_percent}")
-  
-
-    print("\n---- Dados de RAM ----")
-    print(f"Porcentage de RAM: {ram_percent}")
-
-
-    print("\n---- Dados de Disco ----")
-    print(f"Porcentagem do disco: {disk_percent}GB \n")
-
-    print('-------------------------------------------')
-
-    # Pausa o código por 2 segundos antes de repetir o loop
+    
     time.sleep(2)
